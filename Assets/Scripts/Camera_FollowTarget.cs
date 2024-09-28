@@ -6,15 +6,12 @@ using UnityEngine;
 public class Camera_FollowTarget : MonoBehaviour
 {
     public Transform target;
-    public EdgeCollider2D boundingEdge;
+    public GameObject map;
     [SerializeField] private Vector3 cameraSpeed = Vector3.zero; // Velocity used by SmoothDamp
     [SerializeField] private float smoothTime = 0.3f;    // Smooth time for the camera delay
-    
-    private float _topBoundary;
-    private float _bottomBoundary;
-    private float _leftBoundary;
-    private float _rightBoundary;
 
+    private Vector2 _maxBounds;
+    private Vector2 _minBounds;
     private void Awake()
     {
         SetCameraBoundaries();
@@ -22,12 +19,10 @@ public class Camera_FollowTarget : MonoBehaviour
     }
     private void SetCameraBoundaries()
     {
-        if (!boundingEdge)
+        if (!map)
         {
-            _topBoundary = Single.PositiveInfinity;
-            _bottomBoundary = Single.NegativeInfinity;
-            _leftBoundary = Single.NegativeInfinity;
-            _rightBoundary = Single.PositiveInfinity;
+            _maxBounds = Vector2.positiveInfinity;
+            _minBounds = Vector2.negativeInfinity;
             return;
         }
 
@@ -36,44 +31,27 @@ public class Camera_FollowTarget : MonoBehaviour
         float camHalfHeight = mainCamera.orthographicSize;
         float camHalfWidth = mainCamera.aspect * camHalfHeight;
 
-        // Calculate min and max bounds from the edge collider
-        Vector2[] points = boundingEdge.points;
-        float maxY = points[0].y;
-        float minY = points[0].y;
-        float maxX = points[0].x;
-        float minX = points[0].x;
-
-        // Loop through the points to find the extreme bounds
-        foreach (var point in points)
-        {
-            if (point.x < minX) minX = point.x;
-            if (point.y < minY) minY = point.y;
-            if (point.x > maxX) maxX = point.x;
-            if (point.y > maxY) maxY = point.y;
-        }
-
-        _topBoundary = maxY - camHalfHeight;
-        _bottomBoundary = minY + camHalfHeight;
-        _leftBoundary = minX + camHalfWidth;
-        _rightBoundary = maxX - camHalfWidth;
+        // Get the map bounds from its Renderer (e.g., SpriteRenderer or TilemapRenderer)
+        Bounds mapBounds = map.GetComponent<Renderer>().bounds;
+        _maxBounds = new Vector2(mapBounds.max.x - camHalfWidth, mapBounds.max.y - camHalfHeight);
+        _minBounds = new Vector2(mapBounds.min.x + camHalfWidth, mapBounds.min.y + camHalfHeight + 2f); //+2f to keep the camera snug above the level bottom edge
     }
     private void PositionOnTarget()
     {
         if (!target)
             throw new SystemException("No target assigned");
 
-        float horizontalPos = Math.Clamp(target.position.x, _leftBoundary, _rightBoundary);
-        float verticalPos = Math.Clamp(target.position.y, _bottomBoundary, _topBoundary);
+        float horizontalPos = Math.Clamp(target.position.x, _minBounds.x, _maxBounds.x);
+        float verticalPos = Math.Clamp(target.position.y, _minBounds.y, _maxBounds.y);
         transform.position = new Vector3(horizontalPos, verticalPos, -10f);
     }
-    
-    void LateUpdate()
+    private void LateUpdate()
     {
         if (!target)
             throw new SystemException("No target assigned");
 
-        float horizontalPos = Math.Clamp(target.position.x, _leftBoundary, _rightBoundary);
-        float verticalPos = Math.Clamp(target.position.y, _bottomBoundary, _topBoundary);
+        float horizontalPos = Math.Clamp(target.position.x, _minBounds.x, _maxBounds.x);
+        float verticalPos = Math.Clamp(target.position.y, _minBounds.y, _maxBounds.y);
         Vector3 position = new Vector3(horizontalPos, verticalPos, -10f);
         transform.position = Vector3.SmoothDamp(transform.position, position, ref cameraSpeed, smoothTime);
     }
