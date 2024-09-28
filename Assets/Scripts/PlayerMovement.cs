@@ -5,11 +5,11 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    public MapBounder mapBounder;
+    [SerializeField] private Vector2 movementSpeed = new Vector2(1.8f, 5f);
     private Rigidbody2D _rb;
     private Animator _animator;
     private bool _grounded = true;
-
-    [SerializeField] private Vector2 movementSpeed = new Vector2(1.8f, 5f);
 
     private void Awake()
     {
@@ -22,15 +22,14 @@ public class PlayerMovement : MonoBehaviour
         UpdatePlayerMovement();
         UpdatePlayerScaling();
         UpdateAnimatorParameters();
+        UpdatePlayerPosition();
     }
 
     private void UpdatePlayerMovement()
     {
         Vector2 velocity = new Vector2(0, _rb.velocity.y);
         //Handle horizontal movement
-        float horizontalInput = Input.GetAxis("Horizontal");
-        velocity.x = horizontalInput * movementSpeed.x;
-
+        velocity.x = GetHorizontalMovement();
         //Handle vertical movement
         bool jumpKey = Input.GetKey(KeyCode.Space);
         if (jumpKey && _grounded)
@@ -40,6 +39,22 @@ public class PlayerMovement : MonoBehaviour
         }
 
         _rb.velocity = velocity;
+    }
+
+    private float GetHorizontalMovement()
+    {
+        Vector2 maxBounds = mapBounder.GetMaxBounds();
+        Vector2 minBounds = mapBounder.GetMinBounds();
+        float currentXPosition = transform.position.x;
+        float horizontalInput = Input.GetAxis("Horizontal");
+
+        if (currentXPosition <= minBounds.x + 0.2f && horizontalInput < 0.01f)
+            return -0.02f;
+        
+        if (currentXPosition >= maxBounds.x - 0.2f && horizontalInput > 0.01f)
+            return 0.02f;
+           
+        return horizontalInput * movementSpeed.x;
     }
 
     private void UpdatePlayerScaling()
@@ -53,6 +68,19 @@ public class PlayerMovement : MonoBehaviour
             scale.x = 1;
 
         transform.localScale = scale;
+    }
+
+    private void UpdatePlayerPosition()
+    {
+        //Confine the player to the map if a map bounder is passed
+        if (!mapBounder)
+            return;
+
+        Vector2 maxBounds = mapBounder.GetMaxBounds();
+        Vector2 minBounds = mapBounder.GetMinBounds();
+        float clampedX = Mathf.Clamp(transform.position.x, minBounds.x + 0.03f, maxBounds.x - 0.03f);
+        float clampedY = Mathf.Clamp(transform.position.y, minBounds.y, maxBounds.y);
+        transform.position = new Vector3(clampedX, clampedY, transform.position.z);
     }
 
     private void UpdateAnimatorParameters()
