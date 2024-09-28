@@ -23,18 +23,18 @@ public class Camera_FollowTarget : MonoBehaviour
 
     private Vector2 GetMaxBounds()
     {
-        if(!mapBounder)
+        if (!mapBounder)
             return Vector2.positiveInfinity;
-        
+
         Vector2 maxBounds = mapBounder.GetMaxBounds();
         return new Vector2(maxBounds.x - _camHalfWidth, maxBounds.y - _camHalfHeight);
     }
-    
+
     private Vector2 GetMinBounds()
     {
-        if(!mapBounder)
+        if (!mapBounder)
             return Vector2.negativeInfinity;
-        
+
         Vector2 maxBounds = mapBounder.GetMinBounds();
         return new Vector2(maxBounds.x + _camHalfWidth, maxBounds.y + _camHalfHeight);
     }

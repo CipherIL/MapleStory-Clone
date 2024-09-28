@@ -50,10 +50,10 @@ public class PlayerMovement : MonoBehaviour
 
         if (currentXPosition <= minBounds.x + 0.2f && horizontalInput < 0.01f)
             return -0.02f;
-        
+
         if (currentXPosition >= maxBounds.x - 0.2f && horizontalInput > 0.01f)
             return 0.02f;
-           
+
         return horizontalInput * movementSpeed.x;
     }
 
